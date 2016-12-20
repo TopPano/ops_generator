@@ -9,6 +9,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "dependencies": {
+    "mustache": "^2.3.0",
+    "lodash": "^4.0.0",
+    "change-case": "^3.0.0"
+  },
   "author": "Wei-Ting, Chou",
   "license": "ISC"
 }
