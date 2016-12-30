@@ -13,12 +13,13 @@
   },
   "devDependencies": {
     "ava": "0.17.0",
+    "chai": "^3.5.0",
     "nyc": "10.0.0"
   },
   "dependencies": {
-    "mustache": "^2.3.0",
+    "change-case": "^3.0.0",
     "lodash": "^4.0.0",
-    "change-case": "^3.0.0"
+    "mustache": "^2.3.0"
   },
   "author": "Wei-Ting, Chou",
   "license": "ISC",
@@ -38,7 +39,9 @@
   },
   "ava": {
     "files": [
-      "test/*.js"
+      "test/*.js",
+      "!test/helper.js",
+      "!test/const.js"
     ],
     "source": [
       "lib/*.js"
