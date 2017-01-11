@@ -12,9 +12,11 @@
     "build": "BABEL_ENV=production"
   },
   "devDependencies": {
-    "ava": "0.17.0",
+    "ava": "^0.17.0",
     "chai": "^3.5.0",
-    "nyc": "10.0.0"
+    "nyc": "^10.0.0",
+    "rewire": "^2.5.2",
+    "sinon": "^1.17.7"
   },
   "dependencies": {
     "change-case": "^3.0.0",
