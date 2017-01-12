@@ -7,13 +7,52 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "nyc ava && nyc report --reporter=html",
+    "test:watch": "ava --watch",
+    "build": "BABEL_ENV=production"
+  },
+  "devDependencies": {
+    "ava": "^0.17.0",
+    "chai": "^3.5.0",
+    "nyc": "^10.0.0",
+    "rewire": "^2.5.2",
+    "sinon": "^1.17.7"
   },
   "dependencies": {
-    "mustache": "^2.3.0",
+    "change-case": "^3.0.0",
     "lodash": "^4.0.0",
-    "change-case": "^3.0.0"
+    "mustache": "^2.3.0"
   },
   "author": "Wei-Ting, Chou",
-  "license": "ISC"
+  "license": "ISC",
+  "babel": {
+    "presets": [
+      "es2015"
+    ],
+    "plugins": [
+      "transform-runtime"
+    ],
+    "ignore": "test/*.js",
+    "env": {
+      "development": {
+        "sourceMaps": "inline"
+      }
+    }
+  },
+  "ava": {
+    "files": [
+      "test/*.js",
+      "!test/helper.js",
+      "!test/const.js"
+    ],
+    "source": [
+      "lib/*.js"
+    ],
+    "concurrency": 5,
+    "verbose": true,
+    "powerAssert": true,
+    "require": [
+      "babel-core/register"
+    ]
+  }
 }
