@@ -416,3 +416,37 @@ test('expandArgus: generate a list of arguments with the index number as the pos
     });
   });
 });
+
+const NO_TRUTHY_STMT_MSG = 'genIfElse: Truthy statements must be a non-empty string, but find';
+
+test('genIfElse: Generate if/else statements', t => {
+  // Tests for condition is non-string or empty string
+  [undefined, null, 10, 0.5, [], {}, () => {}, ''].forEach((condition) => {
+    t.is(utils.genIfElse(condition), '');
+  });
+  // Tests for truthyStmts is non-string or empty string
+  [undefined, null, 10, 0.5, [], {}, () => {}, ''].forEach((truthyStmts) => {
+    t.is(utils.genIfElse('true', truthyStmts), '');
+    // testThrownMsg(t, `${NO_TRUTHY_STMT_MSG}: ${truthyStmts}`, utils.genIfElse, 'true', truthyStmts);
+  });
+  // Tests for falsyStmts is non-string or empty string
+  [undefined, null, 10, 0.5, [], {}, () => {}, ''].forEach((falsyStmts) => {
+    t.is(
+      utils.genIfElse('true', 'a++;', falsyStmts),
+      'if (true) {\n    a++;\n}'
+    );
+  });
+  // Tests for condition, truthyStmts and falsyStmts are non-empty string
+  t.is(
+    utils.genIfElse('a == b', 'a++;', 'b++;'),
+    'if (a == b) {\n    a++;\n} else {\n    b++;\n}'
+  );
+  t.is(
+    utils.genIfElse('a == b', 'a++;\nc++;', 'b++;\nd++;'),
+    'if (a == b) {\n    a++;\n    c++;\n} else {\n    b++;\n    d++;\n}'
+  );
+  t.is(
+    utils.genIfElse('a == b', '  a++;\n  c++;', '  b++;\n  d++;'),
+    'if (a == b) {\n      a++;\n      c++;\n} else {\n      b++;\n      d++;\n}'
+  );
+});
