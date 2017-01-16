@@ -299,36 +299,25 @@ test('expandArrayAccessor: generate a list of square brackets with custom index 
       template
     );
   });
-  // Test for non-integer start index
-  [undefined, null, '', "", 0.5, -0.5, NaN, {}, [], () => {}].forEach((start) => {
-    testThrownMsg(
-      t,
-      `${INVALID_EXPAND_ARRAY_PARAMS_MSG}: start index ${start} is not an integer`,
-      utils.expandArrayAccessor,
-      validTemplate,
-      start
-    );
-  });
-  // Test for non-integer end index, except for undefined
-  [null, '', "", 0.5, -0.5, NaN, {}, [], () => {}].forEach((end) => {
+  // Test for non-integer end index
+  [undefined, null, '', "", 0.5, -0.5, NaN, {}, [], () => {}].forEach((end) => {
     testThrownMsg(
       t,
       `${INVALID_EXPAND_ARRAY_PARAMS_MSG}: end index ${end} is not an integer`,
       utils.expandArrayAccessor,
       validTemplate,
-      1,
       end
     );
   });
 
   /* Tests for valid inputs */
-  // Test for inputs without end index
+  // Test for inputs without start index
   _.range(0, 10).forEach((power) => {
-    const startIdx = Math.pow(2, power);
-    testExpandedArrayAccessorOutput(t, validTemplate, startIdx);
-    testExpandedArrayAccessorOutput(t, validTemplate, -startIdx);
+    const endIdx = Math.pow(2, power);
+    testExpandedArrayAccessorOutput(t, validTemplate, endIdx);
+    testExpandedArrayAccessorOutput(t, validTemplate, -endIdx);
   });
-  // Test for inputs with end index
+  // Test for inputs with start index
   _.range(0, 5).forEach((power) => {
     const startIdx = Math.pow(2, power);
     _.range(0, 5).forEach((power) => {
@@ -365,38 +354,27 @@ test('expandArgus: generate a list of arguments with the index number as the pos
       template
     );
   });
-  // Test for non-integer start index
-  [undefined, null, '', "", 0.5, -0.5, NaN, {}, [], () => {}].forEach((start) => {
-    testThrownMsg(
-      t,
-      `${INVALID_EXPAND_ARGS_PARAMS_MSG}: start index ${start} is not an integer`,
-      utils.expandArgus,
-      validTemplateStr,
-      start
-    );
-  });
-  // Test for non-integer end index, except for undefined
-  [null, '', "", 0.5, -0.5, NaN, {}, [], () => {}].forEach((end) => {
+  // Test for non-integer end index
+  [undefined, null, '', "", 0.5, -0.5, NaN, {}, [], () => {}].forEach((end) => {
     testThrownMsg(
       t,
       `${INVALID_EXPAND_ARGS_PARAMS_MSG}: end index ${end} is not an integer`,
       utils.expandArgus,
       validTemplateStr,
-      1,
       end
     );
   });
 
   /* Tests for valid inputs */
-  // Test for inputs without end index
+  // Test for inputs without start index
   _.range(0, 10).forEach((power) => {
-    const startIdx = Math.pow(2, power);
-    testExpandedArgusOutput(t, validTemplateStr, startIdx);
-    testExpandedArgusOutput(t, validTemplateFn, startIdx);
-    testExpandedArgusOutput(t, validTemplateStr, -startIdx);
-    testExpandedArgusOutput(t, validTemplateFn, -startIdx);
+    const endIdx = Math.pow(2, power);
+    testExpandedArgusOutput(t, validTemplateStr, endIdx);
+    testExpandedArgusOutput(t, validTemplateFn, endIdx);
+    testExpandedArgusOutput(t, validTemplateStr, -endIdx);
+    testExpandedArgusOutput(t, validTemplateFn, -endIdx);
   });
-  // Test for inputs with end index
+  // Test for inputs with start index
   _.range(0, 5).forEach((power) => {
     const startIdx = Math.pow(2, power);
     _.range(0, 5).forEach((power) => {
