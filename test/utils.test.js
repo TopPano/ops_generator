@@ -22,12 +22,6 @@ test('getTfRank: calculate the rank number of the shape in tensorflow aspect', t
   [undefined, null, 'CV32', 'int', 3].forEach((shape) => testThrownMsg(t, SHAPE_NON_ARRAY_MSG, utils.getTfRank, shape));
   // Test for empty array
   testThrownMsg(t, SHAPE_EMPTY_ARRAY_MSG, utils.getTfRank, []);
-  // Test for rank 0 with multichannel data descriptor
-  VALID_CV_DEPTHS.forEach((depth) => {
-    _.range(2, MAX_CV_CHANNELS + 1).forEach((channels) => {
-      testThrownMsg(t, SHAPE_RANK_ZERO_MULTICHANNEL_MSG, utils.getTfRank, [`CV_${depth}C${channels}`]);
-    });
-  });
   // Test for valid inputs
   _.range(0, 20).forEach((rawRank) => {
     const rawInput = _.fill(Array(rawRank), 1);
@@ -39,14 +33,12 @@ test('getTfRank: calculate the rank number of the shape in tensorflow aspect', t
     VALID_STD_TYPES.forEach((type) => {
       t.is(utils.getTfRank(_.concat(rawInput, type)), rawRank);
     });
-    // Test for multichannel, expect reeturned rank equal to raw rank + 1
-    if (rawRank > 0) {
-      VALID_CV_DEPTHS.forEach((depth) => {
-        _.range(2, MAX_CV_CHANNELS + 1).forEach((channels) => {
-          t.is(utils.getTfRank(_.concat(rawInput, `CV_${depth}C${channels}`)), rawRank + 1);
-        });
+    // Test for multichannel, expect returned rank equal to raw rank + 1
+    VALID_CV_DEPTHS.forEach((depth) => {
+      _.range(2, MAX_CV_CHANNELS + 1).forEach((channels) => {
+        t.is(utils.getTfRank(_.concat(rawInput, `CV_${depth}C${channels}`)), rawRank + 1);
       });
-    }
+    });
   });
 });
 
@@ -55,12 +47,6 @@ test('getCvRank: calculate the rank number of the shape in OpenCV aspect', t => 
   [undefined, null, 'CV32', 'int', 3].forEach((shape) => testThrownMsg(t, SHAPE_NON_ARRAY_MSG, utils.getCvRank, shape));
   // Test for empty array
   testThrownMsg(t, SHAPE_EMPTY_ARRAY_MSG, utils.getCvRank, []);
-  // Test for rank 0 with multichannel data descriptor
-  VALID_CV_DEPTHS.forEach((depth) => {
-    _.range(2, MAX_CV_CHANNELS + 1).forEach((channels) => {
-      testThrownMsg(t, SHAPE_RANK_ZERO_MULTICHANNEL_MSG, utils.getCvRank, [`CV_${depth}C${channels}`]);
-    });
-  });
   // Test for valid inputs, expect return rank eqaul to raw rank
   _.range(0, 20).forEach((rawRank) => {
     const rawInput = _.fill(Array(rawRank), 1);
@@ -73,13 +59,11 @@ test('getCvRank: calculate the rank number of the shape in OpenCV aspect', t => 
       t.is(utils.getTfRank(_.concat(rawInput, type)), rawRank);
     });
     // Test for multichannel
-    if (rawRank > 0) {
-      VALID_CV_DEPTHS.forEach((depth) => {
-        _.range(2, MAX_CV_CHANNELS + 1).forEach((channels) => {
-          t.is(utils.getCvRank(_.concat(rawInput, `CV_${depth}C${channels}`)), rawRank);
-        });
+    VALID_CV_DEPTHS.forEach((depth) => {
+      _.range(2, MAX_CV_CHANNELS + 1).forEach((channels) => {
+        t.is(utils.getCvRank(_.concat(rawInput, `CV_${depth}C${channels}`)), rawRank);
       });
-    }
+    });
   });
 });
 
