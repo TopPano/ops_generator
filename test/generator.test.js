@@ -39,7 +39,10 @@ const _render = generator.__get__('_render');
 
 const SHAPE_NON_ARRAY_MSG = 'Invalid arguments: no shape array found.';
 const SHAPE_EMPTY_ARRAY_MSG = 'Invalid shape format: empty shape array.';
-const SHAPE_INVALID_VECTOR_MSG = 'Invalid shape format: Mat of vector or vector of Mat of vector is not allowed';
+const SHAPE_SCALAR_CV_MSG = 'Invalid shape format: scalar of OpenCV type is not allowed';
+const SHAPE_MAT_PRIM_MSG = 'Invalid shape format: Mat of primary type is not allowed';
+const SHAPE_VECTOR_CV_MSG = 'Invalid shape format: vector of OpenCV type is not allowed';
+const SHAPE_MAT_VECTOR_MSG = 'Invalid shape format: Mat of vector or vector of Mat of vector is not allowed';
 
 function testParsedShape(
   t,
@@ -82,31 +85,36 @@ test('parseShape: parse shape array', t => {
   });
   // Test for empty array
   testThrownMsg(t, SHAPE_EMPTY_ARRAY_MSG, parseShape, []);
-  // Tests for data descriptor only (rank = 0)
-  testParsedShape(t, ['CV_8U'], 0, 0, 0, 0, 'MAT', 'Mat');
-  testParsedShape(t, ['int'], 0, 0, 0, 0, 'MAT', 'Mat');
-  // Tests for mat type
+  // Tests for scalar of primary type
+  testParsedShape(t, ['int'], 0, 0, 0, 0, 'SCALAR', 'int');
+  testParsedShape(t, ['double'], 0, 0, 0, 0, 'SCALAR', 'double');
+  // Tests for scalar of cv type
+  testThrownMsg(t, SHAPE_SCALAR_CV_MSG, parseShape, ['CV_8U'])
+  testThrownMsg(t, SHAPE_SCALAR_CV_MSG, parseShape, ['CV_8UC2'])
+  // Tests for mat of primary type
+  testThrownMsg(t, SHAPE_MAT_PRIM_MSG, parseShape, ['10', 'int']);
+  testThrownMsg(t, SHAPE_MAT_PRIM_MSG, parseShape, ['none', '10', 'double']);
+  // Tests for mat of cv type
   testParsedShape(t, ['none', 'CV_16S'], 1, 1, 0, 1, 'MAT', 'Mat');
   testParsedShape(t, ['none', 'CV_8UC2'], 2, 1, 0, 1, 'MAT', 'Mat');
-  testParsedShape(t, ['3', 'none', 'float'], 2, 2, 0, 2, 'MAT', 'Mat');
+  testParsedShape(t, ['3', 'none', 'CV_16UC3'], 3, 2, 0, 2, 'MAT', 'Mat');
   // Tests for vector of primary type
-  testParsedShape(t, ['vector:none', 'CV_32S'], 1, 1, 1, 0, 'VEC_OF_PRIM', 'vector<int32_t>');
-  testParsedShape(t, ['vector:none', 'CV_32SC1'], 1, 1, 1, 0, 'VEC_OF_PRIM', 'vector<int32_t>');
-  testParsedShape(t, ['vector:3', 'vector:10', 'CV_32F'], 2, 2, 2, 0, 'VEC_OF_PRIM', 'vector<vector<float>>');
   testParsedShape(t, ['vector:none', 'double'], 1, 1, 1, 0, 'VEC_OF_PRIM', 'vector<double>');
   testParsedShape(t, ['vector:20', 'vector:10', 'char'], 2, 2, 2, 0, 'VEC_OF_PRIM', 'vector<vector<char>>');
-  // Test for vector of Mat
+  // Tests for vector of cv type
+  testThrownMsg(t, SHAPE_VECTOR_CV_MSG, parseShape, ['vector:none', 'CV_32S']);
+  testThrownMsg(t, SHAPE_VECTOR_CV_MSG, parseShape, ['vector:none', 'CV_32SC1']);
+  testThrownMsg(t, SHAPE_VECTOR_CV_MSG, parseShape, ['vector:3', 'vector:10', 'CV_32SC3']);
+  // Tests for vector of Mat of primary types
+  testThrownMsg(t, SHAPE_MAT_PRIM_MSG, parseShape, ['vector:none', '10', 'int']);
+  testThrownMsg(t, SHAPE_MAT_PRIM_MSG, parseShape, ['vector:30', '30', '10', 'char']);
+  // Tests for vector of Mat of cv types
   testParsedShape(t, ['vector:none', '100', 'CV_8S'], 2, 2, 1, 1, 'VEC_OF_MAT', 'vector<Mat>');
   testParsedShape(t, ['vector:none', '100', 'CV_8SC1'], 2, 2, 1, 1, 'VEC_OF_MAT', 'vector<Mat>');
   testParsedShape(t, ['vector:none', '100', 'CV_8SC3'], 3, 2, 1, 1, 'VEC_OF_MAT', 'vector<Mat>');
-  testParsedShape(t, ['vector:10', '3', 'double'], 2, 2, 1, 1, 'VEC_OF_MAT', 'vector<Mat>');
-  testParsedShape(t, ['vector:none', '3', '10', 'int'], 3, 3, 1, 2, 'VEC_OF_MAT', 'vector<Mat>');
-  // Tests for vector of CV
-  testParsedShape(t, ['vector:3', 'CV_64FC2'], 2, 1, 1, 0, 'VEC_OF_CV', 'vector<Vec<double, 2>>');
-  testParsedShape(t, ['vector:none', 'vector:10', 'CV_8UC3'], 3, 2, 2, 0, 'VEC_OF_CV', 'vector<vector<Vec<uint8_t, 3>>>');
-  // Test for mat of vector
-  testThrownMsg(t, SHAPE_INVALID_VECTOR_MSG, parseShape, ['10', 'vector:10', 'CV_16U']);
-  testThrownMsg(t, SHAPE_INVALID_VECTOR_MSG, parseShape, ['vector:none', '10', 'vector:10', 'CV_16U']);
+  // Tests for mat of vector
+  testThrownMsg(t, SHAPE_MAT_VECTOR_MSG, parseShape, ['10', 'vector:10', 'CV_16U']);
+  testThrownMsg(t, SHAPE_MAT_VECTOR_MSG, parseShape, ['vector:none', '10', 'vector:10', 'CV_16U']);
 });
 
 test('ascendingId: given objects a and b, return a.id - b.id', t => {
@@ -584,6 +592,7 @@ test.skip('computeInputFn: return string of inputs changed from tensorflow to Op
 
 test('computeExecute: convert parsed operations metadata to array for execution', t => {
   const fnName = 'my_func';
+  const pShape = { tfRank: 3 };
 
   // Test for function name only
   t.deepEqual(computeExecute({ fnName }), { fnName });
@@ -598,10 +607,10 @@ test('computeExecute: convert parsed operations metadata to array for execution'
   // Test for outputs
   t.deepEqual(computeExecute({
     fnName,
-    outputs: [{ id: 0, name: 'output0' }]
+    outputs: [{ id: 0, name: 'output0', pShape }]
   }), {
     fnName,
-    outputs: [{ id: 0, name: 'output0' }]
+    outputs: [{ id: 0, name: 'output0', pShape }]
   });
   // Test for inputoutputs
   t.deepEqual(computeExecute({
@@ -623,13 +632,13 @@ test('computeExecute: convert parsed operations metadata to array for execution'
   t.deepEqual(computeExecute({
     fnName,
     inputs: [{ id: 0, name: 'input0' }],
-    outputs: [{ id: 1, name: 'output1' }],
+    outputs: [{ id: 1, name: 'output1', pShape }],
     inputoutputs: [{ id: 2, name: 'inputoutput2' }],
     attributes: [{ id: 3, name: 'attr3' }]
   }), {
     fnName,
     inputs: [{ id: 0, name: 'input0' }],
-    outputs: [{ id: 1, name: 'output1' }],
+    outputs: [{ id: 1, name: 'output1', pShape }],
     inputoutputs: [{ id: 2, name: 'inputoutput2' }],
     attributes: [{ id: 3, name: 'attr3' }]
   });
@@ -672,11 +681,13 @@ test('computeExecuteFn: return string for execution', t => {
     computeExecuteFn.bind({
       fnName,
       outputs: [
-        { id: 1, name: 'output1' },
-        { id: 0, name: 'output0' },
+        { id: 1, name: 'output1', pShape: { typeDecStr: 'int' } },
+        { id: 0, name: 'output0', pShape: { typeDecStr: 'Mat' } },
+        { id: 3, name: 'output3', pShape: { typeDecStr: 'vector<vector<double>>' } },
+        { id: 2, name: 'output2', pShape: { typeDecStr: 'vector<Mat>' } },
       ]
     })(),
-    `Mat output1_cv, output0_cv;\n  ${fnName}(output0_cv, output1_cv);`
+    `int output1_cv;\nMat output0_cv;\nvector<vector<double>> output3_cv;\nvector<Mat> output2_cv;\n\n  ${fnName}(output0_cv, output1_cv, output2_cv, output3_cv);`
   );
   // Tests for inputoutpus
   t.is(
@@ -724,9 +735,9 @@ test('computeExecuteFn: return string for execution', t => {
         { id: 4, name: 'input4' }
       ],
       outputs: [
-        { id: 6, name: 'output6' },
-        { id: 5, name: 'output5' },
-        { id: 7, name: 'output7' }
+        { id: 6, name: 'output6', pShape: { typeDecStr: 'vector<double>' } },
+        { id: 5, name: 'output5', pShape: { typeDecStr: 'Mat' } },
+        { id: 7, name: 'output7', pShape: { typeDecStr: 'char' } }
       ],
       inputoutputs: [
         { id: 0, name: 'inputoutput0' },
@@ -737,7 +748,7 @@ test('computeExecuteFn: return string for execution', t => {
         { id: 8, name: 'attr8' }
       ]
     })(),
-    `Mat output6_cv, output5_cv, output7_cv;\n  ${fnName}(inputoutput0_cv, inputoutput1_cv, input2_cv, attr3_, input4_cv, output5_cv, output6_cv, output7_cv, attr8_);`
+    `vector<double> output6_cv;\nMat output5_cv;\nchar output7_cv;\n\n  ${fnName}(inputoutput0_cv, inputoutput1_cv, input2_cv, attr3_, input4_cv, output5_cv, output6_cv, output7_cv, attr8_);`
   );
 });
 
