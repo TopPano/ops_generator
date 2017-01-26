@@ -93,7 +93,7 @@ test('parseDimDtor: parse dimensional descriptor string', t => {
 });
 
 const INVALID_DATA_DTOR_MSG = 'Invalid data descriptor format';
-const INVALID_DATA_DTOR_STATIC_MAT_MSG = 'Invalid data descriptor format: static Mat type does not support multichannels';
+const INVALID_DATA_DTOR_STATIC_MAT_MSG = 'Invalid data descriptor format: static Mat type (e.g., Matx, Vec) does not support multichannels';
 const INVALID_DATA_CHANNELS_MSG = 'Invalid Data Cell format of channel: expect number between 1, 4 but get';
 const INVALID_DATA_DEPTH_MSG = 'Invalid Data Cell format of depth';
 
@@ -108,6 +108,7 @@ function testInvalidDepthErrMsg(t, dtor, depth) {
 function testParsedDataDtorOutputCv(t, dtor, expectedFormat, expectedCType, expectedDType, expectedChannels) {
   const output = parseDataDtor(dtor);
 
+  // TODO: Test accessor function.
   expect(output).to.be.an('object');
   expect(output.toString).to.be.an('function');
   expect(output.accessor).to.be.an('function');
@@ -146,10 +147,13 @@ test('parseDataDtor: parse data descriptor string', t => {
   VALID_CV_DEPTHS.forEach((depth) => {
     // Without channel postfix, which means channels = 1
     testParsedDataDtorOutputCv(t, `CV_${depth}`, 'cv', 'Mat', depth, 1);
+    testParsedDataDtorOutputCv(t, `CV_${depth}:Mat`, 'cv', 'Mat', depth, 1);
     testParsedDataDtorOutputCv(t, `CV_${depth}:Matx`, 'cv', 'Matx', depth, 1);
+    testParsedDataDtorOutputCv(t, `CV_${depth}:Vec`, 'cv', 'Vec', depth, 1);
     // With channel postfix
     _.range(1, MAX_CV_CHANNELS + 1).forEach((channels) => {
       testParsedDataDtorOutputCv(t, `CV_${depth}C${channels}`, 'cv', 'Mat', depth, channels);
+      testParsedDataDtorOutputCv(t, `CV_${depth}C${channels}:Mat`, 'cv', 'Mat', depth, channels);
     });
   });
   // Test for invalid OpenCV depths
@@ -182,6 +186,7 @@ const SHAPE_MAT_PRIM_MSG = 'Invalid shape format: Mat of primary type is not all
 const SHAPE_VECTOR_CV_MSG = 'Invalid shape format: vector of OpenCV type is not allowed';
 const SHAPE_MAT_VECTOR_MSG = 'Invalid shape format: Mat of vector or vector of Mat of vector is not allowed';
 const SHAPE_VEC_ONE_DIM_MSG = 'Invalid shape format: Vec type should be one-dimensional';
+const SHAPE_MATX_TWO_DIM_MSG = 'Invalid shape format: the maximum dimension size of Matx type is 2';
 
 function testParsedShape(
   t,
@@ -235,8 +240,14 @@ test('parseShape: parse shape array', t => {
 
   // Tests for mat of cv type
   testParsedShape(t, ['none', 'CV_16S'], 1, 1, 0, 1, [{type: 'Mat', dims: 'none'}], 'MAT', 'Mat', 'Mat');
+  testParsedShape(t, ['none', 'CV_16S:Mat'], 1, 1, 0, 1, [{type: 'Mat', dims: 'none'}], 'MAT', 'Mat', 'Mat');
   testParsedShape(t, ['none', 'CV_8UC2'], 2, 1, 0, 1, [{type: 'Mat', dims: 'none'}], 'MAT', 'Mat', 'Mat');
+  testParsedShape(t, ['none', 'CV_8UC2:Mat'], 2, 1, 0, 1, [{type: 'Mat', dims: 'none'}], 'MAT', 'Mat', 'Mat');
   testParsedShape(t, ['3', 'none', 'CV_16UC3'], 3, 2, 0, 2, [
+    {type: 'Mat', dims: 3},
+    {type: 'Mat', dims: 'none'}
+  ], 'MAT', 'Mat', 'Mat');
+  testParsedShape(t, ['3', 'none', 'CV_16UC3:Mat'], 3, 2, 0, 2, [
     {type: 'Mat', dims: 3},
     {type: 'Mat', dims: 'none'}
   ], 'MAT', 'Mat', 'Mat');
@@ -249,6 +260,7 @@ test('parseShape: parse shape array', t => {
     {type: 'Mat', dims: 4}
   ], 'MAT', 'Matx<float, 4, 4>', 'Matx<float, 4, 4>');
   testThrownMsg(t, SHAPE_VEC_ONE_DIM_MSG, parseShape, ['3', '3', 'CV_32F:Vec']);
+  testThrownMsg(t, SHAPE_MATX_TWO_DIM_MSG, parseShape, ['3', '3', '3', 'CV_32F:Matx']);
   testThrownMsg(t, SHAPE_INVALID_DIM_DYNAMIC_MSG, parseShape, ['none', '3', 'CV_32F:Vec']);
   testThrownMsg(t, SHAPE_INVALID_DIM_DYNAMIC_MSG, parseShape, ['none', '3', 'CV_32F:Matx']);
 
@@ -269,9 +281,23 @@ test('parseShape: parse shape array', t => {
   // Tests for vector of Mat of cv types
   testParsedShape(t, ['vector:none', '100', 'CV_8S'], 2, 2, 1, 1, [{type: 'Mat', dims: 100}], 'VEC_OF_MAT',
                   'Mat', 'vector<Mat>');
+  testParsedShape(t, ['vector:none', '100', 'CV_8S:Mat'], 2, 2, 1, 1, [{type: 'Mat', dims: 100}], 'VEC_OF_MAT',
+                  'Mat', 'vector<Mat>');
+  testParsedShape(t, ['vector:none', '100', 'CV_8S:Matx'], 2, 2, 1, 1, [{type: 'Mat', dims: 100}], 'VEC_OF_MAT',
+                  'Matx<int8_t, 1, 100>', 'vector<Matx<int8_t, 1, 100>>');
+  testParsedShape(t, ['vector:none', '100', 'CV_8S:Vec'], 2, 2, 1, 1, [{type: 'Mat', dims: 100}], 'VEC_OF_MAT',
+                  'Vec<int8_t, 100>', 'vector<Vec<int8_t, 100>>');
   testParsedShape(t, ['vector:none', '100', 'CV_8SC1'], 2, 2, 1, 1, [{type: 'Mat', dims: 100}], 'VEC_OF_MAT',
                   'Mat', 'vector<Mat>');
+  testParsedShape(t, ['vector:none', '100', 'CV_8SC1:Mat'], 2, 2, 1, 1, [{type: 'Mat', dims: 100}], 'VEC_OF_MAT',
+                  'Mat', 'vector<Mat>');
+  testParsedShape(t, ['vector:none', '100', 'CV_8SC1:Matx'], 2, 2, 1, 1, [{type: 'Mat', dims: 100}], 'VEC_OF_MAT',
+                  'Matx<int8_t, 1, 100>', 'vector<Matx<int8_t, 1, 100>>');
+  testParsedShape(t, ['vector:none', '100', 'CV_8SC1:Vec'], 2, 2, 1, 1, [{type: 'Mat', dims: 100}], 'VEC_OF_MAT',
+                  'Vec<int8_t, 100>', 'vector<Vec<int8_t, 100>>');
   testParsedShape(t, ['vector:none', '100', 'CV_8SC3'], 3, 2, 1, 1, [{type: 'Mat', dims: 100}], 'VEC_OF_MAT',
+                  'Mat', 'vector<Mat>');
+  testParsedShape(t, ['vector:none', '100', 'CV_8SC3:Mat'], 3, 2, 1, 1, [{type: 'Mat', dims: 100}], 'VEC_OF_MAT',
                   'Mat', 'vector<Mat>');
 
   // Tests for mat of vector
