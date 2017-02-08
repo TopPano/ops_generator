@@ -34,7 +34,7 @@ const computeExecute = generator.__get__('computeExecute');
 const computeExecuteFn = generator.__get__('computeExecuteFn');
 const computeOutput = generator.__get__('computeOutput');
 const computeOutputFn = generator.__get__('computeOutputFn');
-const _render = generator.__get__('_render');
+const renderKernelTemp = generator.__get__('renderKernelTemp');
 
 
 test('ascendingId: given objects a and b, return a.id - b.id', t => {
@@ -753,7 +753,7 @@ function testIntervalRender(t, opsMeta) {
   };
 
   // TODO: Check arguments that is passed to registar functions
-  t.is(_render(opsMeta), mustacheStub());
+  t.is(renderKernelTemp(opsMeta), mustacheStub());
   t.true(mustacheStub.calledWith(getTemplateStub(), expectedRenderArg));
 
   mustacheStub.restore();
@@ -767,7 +767,7 @@ function testIntervalRender(t, opsMeta) {
   generator.__set__('computeOutput', computeOutput);
 }
 
-test.skip('_render: internal function for render', t => {
+test.skip('renderKernelTemp: internal function for render', t => {
   const opName = 'my_op';
   const fnName = 'my_fn';
   const inputs = {
