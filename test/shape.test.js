@@ -11,6 +11,7 @@ import {
 } from './const';
 import { testThrownMsg } from './helper';
 import { parseShape, getTfRank, getCvRank, parseDimDtor, parseDataDtor } from '../lib/shape';
+import { cvToStd } from '../lib/types';
 
 
 test('getTfRank: calculate the rank number of the shape in tensorflow aspect', t => {
@@ -105,13 +106,14 @@ function testInvalidDepthErrMsg(t, dtor, depth) {
   testThrownMsg(t, `${INVALID_DATA_DEPTH_MSG}: ${depth} from ${dtor}`, parseDataDtor, dtor);
 }
 
-function testParsedDataDtorOutputCv(t, dtor, expectedFormat, expectedCType, expectedDType, expectedChannels) {
+function testParsedDataDtorOutputCv(t, dtor, expectedFormat, expectedCType, expectedDType, expectedChannels, expectedAccessorStr) {
   const output = parseDataDtor(dtor);
 
   // TODO: Test accessor function.
   expect(output).to.be.an('object');
   expect(output.toString).to.be.an('function');
   expect(output.accessor).to.be.an('function');
+  t.is(output.accessor(''), expectedAccessorStr);
   t.is(output.toString(), dtor.split(':')[0]);
   t.deepEqual(_.omit(output, ['toString', 'accessor'] ), {
     format: expectedFormat,
@@ -145,15 +147,21 @@ test('parseDataDtor: parse data descriptor string', t => {
   /* Tests for CvTypes */
   // Test for valid OpenCV depths
   VALID_CV_DEPTHS.forEach((depth) => {
+    let dtype = cvToStd(depth);
     // Without channel postfix, which means channels = 1
-    testParsedDataDtorOutputCv(t, `CV_${depth}`, 'cv', 'Mat', depth, 1);
-    testParsedDataDtorOutputCv(t, `CV_${depth}:Mat`, 'cv', 'Mat', depth, 1);
-    testParsedDataDtorOutputCv(t, `CV_${depth}:Matx`, 'cv', 'Matx', depth, 1);
-    testParsedDataDtorOutputCv(t, `CV_${depth}:Vec`, 'cv', 'Vec', depth, 1);
+    testParsedDataDtorOutputCv(t, `CV_${depth}`, 'cv', 'Mat', depth, 1, `.at<${dtype}>()`);
+    testParsedDataDtorOutputCv(t, `CV_${depth}:Mat`, 'cv', 'Mat', depth, 1, `.at<${dtype}>()`);
+    testParsedDataDtorOutputCv(t, `CV_${depth}:Matx`, 'cv', 'Matx', depth, 1, '()');
+    testParsedDataDtorOutputCv(t, `CV_${depth}:Vec`, 'cv', 'Vec', depth, 1, '[]');
     // With channel postfix
     _.range(1, MAX_CV_CHANNELS + 1).forEach((channels) => {
-      testParsedDataDtorOutputCv(t, `CV_${depth}C${channels}`, 'cv', 'Mat', depth, channels);
-      testParsedDataDtorOutputCv(t, `CV_${depth}C${channels}:Mat`, 'cv', 'Mat', depth, channels);
+      if (channels > 1) {
+        testParsedDataDtorOutputCv(t, `CV_${depth}C${channels}`, 'cv', 'Mat', depth, channels, `.at<Vec<${dtype}, ${channels}>>()`);
+        testParsedDataDtorOutputCv(t, `CV_${depth}C${channels}:Mat`, 'cv', 'Mat', depth, channels, `.at<Vec<${dtype}, ${channels}>>()`);
+      } else {
+        testParsedDataDtorOutputCv(t, `CV_${depth}C${channels}`, 'cv', 'Mat', depth, channels, `.at<${dtype}>()`);
+        testParsedDataDtorOutputCv(t, `CV_${depth}C${channels}:Mat`, 'cv', 'Mat', depth, channels, `.at<${dtype}>()`);
+      }
     });
   });
   // Test for invalid OpenCV depths
